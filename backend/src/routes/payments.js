@@ -14,8 +14,25 @@ router.post('/', auth, async (req,res)=>{
       return res.status(400).json({ error:'validation failed' })
     }
     const p = await Payment.create({ customerId: req.user.sub, amount: Number(amount), currency, provider, payeeAccount, swift })
-    return res.json(p)
-  }catch(e){ console.error(e); res.status(500).json({ error:'server error' }) }
+    
+    // ✅ Clean response
+    return res.json({
+      message: 'Payment created',
+      payment: {
+        id: p._id,
+        amount: p.amount,
+        currency: p.currency,
+        provider: p.provider,
+        payeeAccount: p.payeeAccount,
+        swift: p.swift,
+        status: p.status,
+        createdAt: p.createdAt
+      }
+    });
+  }catch(e){ 
+    console.error(e); 
+    res.status(500).json({ error:'server error' }) 
+  }
 })
 
 // Get my payments

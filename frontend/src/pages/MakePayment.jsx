@@ -1,9 +1,76 @@
-import React, {useState} from 'react'
+import { useState } from 'react'
 import axios from 'axios'
-import { patterns } from '../lib/validators'
 
-export default function MakePayment(){
-  const [form,setForm]=useState({ amount:'', currency:'USD', provider:'SWIFT', payeeAccount:'', swift:'' })
-  const [msg,setMsg]=useState('')
-  const submit=async e=>{ e.preventDefault(); if(!patterns.amount.test(form.amount) || !patterns.swift.test(form.swift)){ setMsg('Validation failed'); return } try{ const r=await axios.post('/api/payments', form); setMsg('Payment created') }catch(err){ setMsg(err.response?.data?.error || String(err)) } }
-  return (<div><h2 className='text-xl mb-4'>Make Payment</h2><form onSubmit={submit} className='max-w-md space-y-2'><input placeholder='Amount' value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})} className='input input-bordered w-full' /><input placeholder='Payee Account' value={form.payeeAccount} onChange={e=>setForm({...form,payeeAccount:e.target.value})} className='input input-bordered w-full' /><input placeholder='SWIFT' value={form.swift} onChange={e=>setForm({...form,swift:e.target.value})} className='input input-bordered w-full' /><select value={form.currency} onChange={e=>setForm({...form,currency:e.target.value})} className='select select-bordered w-full'><option>USD</option><option>ZAR</option><option>EUR</option></select><button className='btn btn-primary' type='submit'>Pay Now</button></form>{msg && <p className='mt-2'>{msg}</p>}</div>) }
+export default function MakePayment() {
+  const [amount, setAmount] = useState('')
+  const [currency, setCurrency] = useState('USD')
+  const [payeeAccount, setPayeeAccount] = useState('')
+  const [swift, setSwift] = useState('')
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+
+  const handlePayment = async (e) => {
+    e.preventDefault()
+    setMessage('')
+    setError('')
+
+    try {
+      const token = localStorage.getItem('token')
+      const res = await axios.post(
+        '/api/payments',
+        { amount, currency, payeeAccount, swift },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      setMessage(`Payment created: ${res.data.payment.id}`)
+      setAmount('')
+      setPayeeAccount('')
+      setSwift('')
+    } catch (err) {
+      setError(err.response?.data?.error || 'Server error')
+    }
+  }
+
+  return (
+    <form onSubmit={handlePayment} className="max-w-md mx-auto mt-10 p-6 bg-white shadow rounded">
+      <h2 className="text-2xl font-bold mb-4">Make Payment</h2>
+
+      {message && <div className="alert alert-success mb-4">{message}</div>}
+      {error && <div className="alert alert-error mb-4">{error}</div>}
+
+      <input
+        type="number"
+        placeholder="Amount"
+        value={amount}
+        onChange={e => setAmount(e.target.value)}
+        className="input input-bordered w-full mb-2"
+        required
+      />
+
+      <input
+        placeholder="Currency"
+        value={currency}
+        onChange={e => setCurrency(e.target.value)}
+        className="input input-bordered w-full mb-2"
+        required
+      />
+
+      <input
+        placeholder="Payee Account"
+        value={payeeAccount}
+        onChange={e => setPayeeAccount(e.target.value)}
+        className="input input-bordered w-full mb-2"
+        required
+      />
+
+      <input
+        placeholder="SWIFT"
+        value={swift}
+        onChange={e => setSwift(e.target.value)}
+        className="input input-bordered w-full mb-2"
+        required
+      />
+
+      <button type="submit" className="btn btn-primary w-full">Make Payment</button>
+    </form>
+  )
+}
